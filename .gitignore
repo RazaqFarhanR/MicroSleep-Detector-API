@@ -1,0 +1,11 @@
+# npm
+node_modules
+package-lock.json
+*.log
+*.gz
+
+# Environment variables
+.env
+
+# ignore additional files using core.excludesFile
+# https://git-scm.com/docs/gitignore
