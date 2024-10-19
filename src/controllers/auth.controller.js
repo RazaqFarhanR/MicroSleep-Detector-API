@@ -44,23 +44,23 @@ module.exports = {
   userAuth: async (req, res) => {
     try {
       const user = await User.scope('withPassword').findOne({
-        where: { email: req.body.email },
+        where: { phone_number: req.body.phone_number },
       });
       if (!user) {
-        throw new Error('Incorrect Email Id/Password');
+        throw new Error('Incorrect Phone Number/Password');
       }
       const reqPass = crypto
         .createHash('md5')
         .update(req.body.password || '')
         .digest('hex');
       if (reqPass !== user.password) {
-        throw new Error('Incorrect Email Id/Password');
+        throw new Error('Incorrect Phone Number/Password');
       }
       const token = jwt.sign(
         {
           user: {
             userId: user.id,
-            email: user.email,
+            phone_number: user.phone_number,
             createdAt: new Date(),
           },
         },
