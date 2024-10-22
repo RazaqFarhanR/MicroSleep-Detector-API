@@ -36,6 +36,9 @@ module.exports = {
       public_key: {
         type: Sequelize.TEXT
       },
+      ca:{
+        type: Sequelize.TEXT
+      },
       status: {
         type: Sequelize.ENUM('active', 'inactive', 'pending_activation'),
         allowNull: false,
