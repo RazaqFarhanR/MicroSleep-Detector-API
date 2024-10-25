@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('accident_reports', {
+    await queryInterface.createTable('accident_detected', {
       id: {
         allowNull: false,
         primaryKey: true,
@@ -16,39 +16,29 @@ module.exports = {
           key: "id"
         }
       },
-      user_id: {
-        type: Sequelize.UUID,
-        allowNull: true,
-        references: {
-          model: "user",
-          key: "id"
-        }
-      },
       latitude: {
-        type: Sequelize.DECIMAL(11, 8)
+        type: Sequelize.FLOAT
       },
       longitude: {
-        type: Sequelize.DECIMAL(11, 8)
-      },
-      tilt_angle: {
         type: Sequelize.FLOAT
       },
       timestamp: {
         type: Sequelize.DATE
       },
+      tilt_angle: {
+        type: Sequelize.FLOAT
+      },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+        type: Sequelize.DATE
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
+        type: Sequelize.DATE
       }
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('accident_reports');
+    await queryInterface.dropTable('accident_detected');
   }
 };

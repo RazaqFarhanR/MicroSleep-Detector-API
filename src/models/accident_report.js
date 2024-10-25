@@ -11,6 +11,14 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      this.belongsTo(models.devices,{
+        foreignKey: "device_id",
+        as: "devices"
+      }),
+      this.belongsTo(models.user,{
+        foreignKey:"user_id",
+        as: "user"
+      })
     }
   }
   accident_report.init({
@@ -22,9 +30,20 @@ module.exports = (sequelize, DataTypes) => {
     },
     device_id: DataTypes.UUID,
     user_id: DataTypes.UUID,
-    location: DataTypes.JSON,
+    latitude: DataTypes.DECIMAL,
+    longitude: DataTypes.DECIMAL,
     tilt_angle: DataTypes.FLOAT,
-    timestamp: DataTypes.DATE
+    timestamp: DataTypes.DATE,
+
+    location: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return {
+          latitude: this.getDataValue('latitude'),
+          longitude: this.getDataValue('longitude')
+        };
+      }
+    }
   }, {
     sequelize,
     modelName: 'accident_report',

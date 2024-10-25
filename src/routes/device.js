@@ -12,6 +12,7 @@ router.post('/', upload.fields([
     { name: 'ca', maxCount: 1 }
 ]), deviceController.createDevice);
 router.post('/conect/{id}', deviceController.connectDevice);
+router.post('/hundred/', deviceController.createHundredDevice)
 router.put('/:id', upload.fields([
     { name: 'certificate', maxCount: 1 },
     { name: 'private_key', maxCount: 1 },

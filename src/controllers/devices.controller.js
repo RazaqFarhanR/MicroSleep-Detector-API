@@ -66,8 +66,31 @@ module.exports = {
     } catch (error) {
         return errorResponse(req, res, error.message);
     }
-},
+  },
 
+  createHundredDevice: async (req, res) => {
+    const devices = [];
+    for (let i = 1; i <= 100; i++) {
+        const SN = await generateSerialNumber();
+        devices.push({
+            device_name: `Device ${i}`,
+            serial_number: SN,
+            client_id: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+    }
+
+    try {
+        await models.sequelize.transaction(async (transaction) => {
+            await Device.bulkCreate(devices, { transaction });
+        });
+
+        return res.status(201).json({ message: '100 Devices created successfully.' });
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+  },
 
   getDeviceById: async (req, res) => {
     const { id } = req.params;

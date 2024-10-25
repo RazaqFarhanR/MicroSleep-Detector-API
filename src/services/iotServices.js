@@ -32,6 +32,14 @@ module.exports = {
         console.log(`Received message from ${topic}:`, payload.toString());
     });
 
+    device.on('error', (error) => {
+        if (error.code === 'ECONNRESET') {
+            console.error('Connection was reset. Please check your network or device configuration.');
+        } else {
+            console.error('Connection error:', error);
+        }
+    });
+
     return device;
     },
 

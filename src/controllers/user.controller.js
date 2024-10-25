@@ -13,6 +13,10 @@ module.exports = {
       const offset = (page - 1) * limit;
 
       const { count, rows } = await User.findAndCountAll({
+        include:[{
+          model: models.emergency_contact,
+          as: 'emergency_contact'
+        }],
         order: [['createdAt', 'DESC']],
         offset: offset,
         limit,
@@ -42,7 +46,7 @@ module.exports = {
       if (req.body.contact_name || req.body.emergency_number) {
         const emergencyData = {
           name: req.body.contact_name,
-          phone_number: req.body.emergency_number
+          phone_number: '62'+req.body.emergency_number
         };
   
         const emergencyContact = await EmergencyContact.findOne({ 
@@ -89,12 +93,15 @@ module.exports = {
     }
   
     try {
-
       const { userId } = req.user;
+      const existEmergency = await EmergencyContact.findOne({where: {user_id: userId}})
+      if (existEmergency) {
+        return res.status(400).json({ message: 'emergency number exist' });
+      }
       let data = {
         user_id: userId,
         name: name,
-        phone_number: phone_number,
+        phone_number: "62"+phone_number,
       }
 
       const emergencyContact = await EmergencyContact.create(data);
