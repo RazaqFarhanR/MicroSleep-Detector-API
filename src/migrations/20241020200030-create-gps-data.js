@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('accident_reports', {
+    await queryInterface.createTable('gps_data', {
       id: {
         allowNull: false,
         primaryKey: true,
@@ -16,13 +16,8 @@ module.exports = {
           key: "id"
         }
       },
-      user_id: {
-        type: Sequelize.UUID,
-        allowNull: true,
-        references: {
-          model: "user",
-          key: "id"
-        }
+      timestamp: {
+        type: Sequelize.DATE
       },
       latitude: {
         type: Sequelize.DECIMAL(11, 8)
@@ -30,11 +25,20 @@ module.exports = {
       longitude: {
         type: Sequelize.DECIMAL(11, 8)
       },
-      tilt_angle: {
-        type: Sequelize.FLOAT
+      altitude: {
+        type: Sequelize.DECIMAL(10, 2)
       },
-      timestamp: {
-        type: Sequelize.DATE
+      speed: {
+        type: Sequelize.DECIMAL(10, 2)
+      },
+      heading: {
+        type: Sequelize.DECIMAL(5, 2)
+      },
+      accuracy: {
+        type: Sequelize.DECIMAL(10, 2)
+      },
+      status: {
+        type: Sequelize.ENUM('active', 'inactive', 'error'),
       },
       createdAt: {
         allowNull: false,
@@ -49,6 +53,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('accident_reports');
+    await queryInterface.dropTable('gps_data');
   }
 };

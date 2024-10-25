@@ -33,6 +33,7 @@ module.exports = (sequelize, DataTypes) => {
     phone_number: DataTypes.STRING,
     password: DataTypes.TEXT,
     is_verified: DataTypes.BOOLEAN,
+    fcm_token: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'user',

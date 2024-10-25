@@ -2,8 +2,11 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const models = require("../models/index");
 const AccidentReport = models.accident_report;
+const AccidentDetected = models.accident_detected;
+const User = models.user;
 const { getResponse, paginationResponse, addResponse, editResponse, errorResponse, deleteResponse } = require("../utils/responseHandler");
 const { sendMsgAccident } = require("../utils/sendAccidentMsg");
+const admin = require('../config/firebaseConfig');
 
 module.exports = {
   allReports: async (req, res) => {
@@ -13,9 +16,22 @@ module.exports = {
       const offset = (page - 1) * limit;
 
       const { count, rows } = await AccidentReport.findAndCountAll({
+        include: [
+          {
+            model: models.devices,
+            as: 'devices',
+            attributes: ['serial_number']
+          },
+          {
+            model: models.user,
+            as: 'user',
+            attributes: ['name']
+          }
+        ],
         order: [['timestamp', 'DESC']],
         offset: offset,
         limit,
+        
       });
       
       const totalPages = Math.ceil(count / limit);
@@ -42,7 +58,7 @@ module.exports = {
 
   reportAccident: async (req, res) => {
     try {
-      const { serial_number, location, tilt_angle } = req.body;
+      const { serial_number, latitude, longitude, tilt_angle } = req.body;
   
       const device = await models.devices.findOne({
         where: { serial_number: serial_number },
@@ -66,42 +82,92 @@ module.exports = {
   
       const timestamp = new Date();
   
-      // const newReport = await AccidentReport.create({
-      //   device_id: device.id,
-      //   user_id: device.user ? device.user.id : null,
-      //   location,
-      //   tilt_angle,
-      //   timestamp,
-      // });
+      const newReport = await AccidentReport.create({
+        device_id: device.id,
+        user_id: device.user ? device.user.id : null,
+        latitude,
+        longitude,
+        tilt_angle,
+        timestamp,
+      });
 
-      console.log(
-          {
-            device_id: device.id,
-            user_id: device.user ? device.user.id : null,
-            location,
-            tilt_angle,
-            timestamp,
-          }
-      );
+      // console.log(
+      //     {
+      //       device_id: device.id,
+      //       user_id: device.user ? device.user.id : null,
+      //       tilt_angle,
+      //       timestamp,
+      //     }
+      // );
+
+      const location = {
+        latitude,
+        longitude
+      }
 
       if (true) {
         const emergencyContact = device.user?.emergency_contact?.phone_number;
-        
-        
         if (emergencyContact) {
-          console.log("send");
           sendMsgAccident(emergencyContact, location, tilt_angle, timestamp);
         } else {
           console.warn('No emergency contact found for the user');
         }
       }
   
-      return addResponse(req, res, {device});
+      return addResponse(req, res, newReport);
   
     } catch (error) {
       console.error('Error creating accident report:', error);
       return errorResponse(req, res, 'Internal server error', 500);
     }
-  }
-   
+  },
+  
+  detectedAccident: async (req, res) => {
+    const { serial_number, latitude, longitude, tilt_angle } = req.body;
+
+    const device = await models.devices.findOne({
+      where: { serial_number: serial_number },
+    });
+
+    try {
+      if (!device) {
+        return res.status(404).json({ message: 'Device not found' });
+      }
+      const user = await User.findOne({ where: { id: device.user_id } });
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      const fcmToken = user.fcm_token;
+      
+      if (!fcmToken) {
+        return res.status(404).json({ message: 'FCM token not found for this user' });
+      }
+  
+      const detectedAct = await AccidentReport.create({
+        device_id: device.id,
+        user_id: device.user ? device.user.id : null,
+        latitude,
+        longitude,
+        tilt_angle,
+        timestamp: Date.now(),
+      });
+
+      const message = {
+        notification: {
+          title: 'Panic Button Alert',
+          body: 'Accident detected! Please confirm your status.',
+        },
+        token: fcmToken,
+      };
+
+      // await AccidentDetected.create(detectedAct)
+      await admin.messaging().send(message);
+      
+      return res.status(200).json({ message: 'Notification sent successfully' });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      return res.status(500).json({ message: 'Error sending notification', error: error.message });
+    }
+  },
 };

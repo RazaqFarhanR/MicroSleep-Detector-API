@@ -43,19 +43,29 @@ module.exports = {
 
   userAuth: async (req, res) => {
     try {
+      const { phone_number, password, fcm_token } = req.body; // Ambil fcm_token dari request body
       const user = await User.scope('withPassword').findOne({
-        where: { phone_number: req.body.phone_number },
+        where: { phone_number },
       });
+      
       if (!user) {
         throw new Error('Incorrect Phone Number/Password');
       }
+      
       const reqPass = crypto
         .createHash('md5')
-        .update(req.body.password || '')
+        .update(password || '')
         .digest('hex');
+        
       if (reqPass !== user.password) {
         throw new Error('Incorrect Phone Number/Password');
       }
+      
+      if (fcm_token) {
+        user.fcm_token = fcm_token;
+        await user.save();
+      }
+      
       const token = jwt.sign(
         {
           user: {
@@ -66,57 +76,62 @@ module.exports = {
         },
         process.env.SECRET,
       );
+      
       delete user.dataValues.password;
       return getResponse(req, res, { user, token });
     } catch (error) {
       return errorResponse(req, res, error.message);
     }
   },
+  
 
   userRegister: async (req, res) => {
-    const { name, email, phone_number, password } = req.body;
-
+    const { name, password, fcm_token } = req.body;
+    const phone_number = '62' + req.body.phone_number;
+  
     if (!name || !phone_number || !password) {
-        return res.status(400).json({ message: 'Name, phone number and password are required' });
+      return res.status(400).json({ message: 'Name, phone number and password are required' });
     }
-
+  
     const transaction = await models.sequelize.transaction();
-
+  
     try {
-        const existingUser = await User.findOne({ where: { phone_number }, transaction });
-        if (existingUser) {
-            return res.status(400).json({ message: 'Phone number is already registered.' });
-        }
-
-        const hashedPassword = crypto
-            .createHash('md5')
-            .update(password)
-            .digest('hex');
-
-        const newUser = await User.create({
-            name,
-            phone_number,
-            password: hashedPassword,
-        }, { transaction });
-
-        const otp = generateOTP();
-        const expiresAt = new Date(Date.now() + 10 * 60000); 
-
-        await OtpCodes.create({
-            user_id: newUser.id,
-            otp_code: otp,
-            expires_at: expiresAt,
-            is_verified: false,
-        }, { transaction });
-
-        await sendOTP(phone_number, otp); 
-        await transaction.commit(); 
-        const msg = "User registered successfully. OTP sent to your phone number.";
-        return addResponse(req, res, newUser, msg);
+      const existingUser = await User.findOne({ where: { phone_number }, transaction });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Phone number is already registered.' });
+      }
+  
+      const hashedPassword = crypto
+        .createHash('md5')
+        .update(password)
+        .digest('hex');
+  
+      const newUser = await User.create({
+        name,
+        phone_number,
+        password: hashedPassword,
+        fcm_token,
+      }, { transaction });
+  
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 10 * 60000); 
+  
+      await OtpCodes.create({
+        user_id: newUser.id,
+        otp_code: otp,
+        expires_at: expiresAt,
+        is_verified: false,
+      }, { transaction });
+  
+      await sendOTP(phone_number, otp); 
+      await transaction.commit(); 
+      const msg = "User registered successfully. OTP sent to your phone number.";
+      return addResponse(req, res, newUser, msg);
     } catch (error) {
-        await transaction.rollback();
-        console.error(error);
-        return errorResponse(req, res, error.message);
+      await transaction.rollback();
+      console.error(error);
+      return errorResponse(req, res, error.message);
     }
   }
+  
 }

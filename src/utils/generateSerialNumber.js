@@ -17,7 +17,7 @@ const generateSerialNumber = async () => {
   do {
     const randomPart = generateRandomString(6);
     const timestamp = Date.now().toString().slice(-3); 
-    serialNumber = `MS-${randomPart}-${year}-${timestamp}`;
+    serialNumber = `MS${randomPart}${year}${timestamp}`;
     
     const existingDevice = await Device.findOne({ where: { serial_number: serialNumber } });
     if (!existingDevice) {

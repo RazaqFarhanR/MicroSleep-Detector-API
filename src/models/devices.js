@@ -31,6 +31,7 @@ module.exports = (sequelize, DataTypes) => {
     certificate: DataTypes.TEXT,
     private_key: DataTypes.TEXT,
     public_key: DataTypes.TEXT,
+    ca: DataTypes.TEXT,
     status: {
       type: DataTypes.ENUM('active', 'inactive', 'pending_activation'),
       get() {
