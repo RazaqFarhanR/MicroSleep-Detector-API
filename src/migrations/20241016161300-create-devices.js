@@ -27,18 +27,6 @@ module.exports = {
       client_id: {
         type: Sequelize.STRING
       },
-      certificate: {
-        type: Sequelize.TEXT
-      },
-      private_key: {
-        type: Sequelize.TEXT
-      },
-      public_key: {
-        type: Sequelize.TEXT
-      },
-      ca:{
-        type: Sequelize.TEXT
-      },
       status: {
         type: Sequelize.ENUM('active', 'inactive', 'pending_activation'),
         allowNull: false,

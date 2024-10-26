@@ -14,16 +14,19 @@ module.exports = {
       const offset = (page - 1) * limit;
 
       const { count, rows } = await Device.findAndCountAll({
-        order: [['createdAt', 'DESC']],
+        order: [
+          ['status', 'ASC'],
+          [models.Sequelize.literal("CAST(SUBSTRING(device_name, LENGTH('device ') + 1) AS UNSIGNED)"), 'ASC']
+        ],
         offset: offset,
-        limit,
+        limit: limit,
         include: [{
             model: models.user,
             as: 'user',
-            attributes: ['name'],
-          }],
+            attributes: ['id','name'],
+        }],
+        attributes: ['id', 'status', 'device_name', 'serial_number', 'client_id']
       });
-      
       const totalPages = Math.ceil(count / limit);
       return paginationResponse(req, res, rows, page, limit, count, totalPages);
     } catch (error) {
@@ -45,22 +48,6 @@ module.exports = {
             serial_number: SN,
             client_id,
         });
-
-        if (req.files['certificate'] && req.files['certificate'][0]) {
-            newDevice.certificate = req.files['certificate'][0].path;
-        }
-        
-        if (req.files['private_key'] && req.files['private_key'][0]) {
-            newDevice.private_key = req.files['private_key'][0].path;
-        }
-        
-        if (req.files['public_key'] && req.files['public_key'][0]) {
-            newDevice.public_key = req.files['public_key'][0].path;
-        }
-        
-        if (req.files['ca'] && req.files['ca'][0]) {
-            newDevice.ca = req.files['ca'][0].path;
-        }
 
         return addResponse(req, res, newDevice, "Device created successfully.");
     } catch (error) {
@@ -123,29 +110,12 @@ module.exports = {
         status: status || device.status,
       };
 
-      if (req.files.certificate && req.files.certificate[0]) {
-          updatedDevice.certificate = req.files.certificate[0].path;          
-      }
-
-      if (req.files.private_key && req.files.private_key[0]) {
-          updatedDevice.private_key = req.files.private_key[0].path;
-      }
-
-      if (req.files.public_key && req.files.public_key[0]) {
-          updatedDevice.public_key = req.files.public_key[0].path;
-      }
-
-      if (req.files.ca && req.files.ca[0]) {
-          updatedDevice.ca = req.files.ca[0].path;
-      }
-
       const result = await Device.update(updatedDevice, {where: {id: id}});
 
       return editResponse(req, res, result);
     } catch (error) {
       console.log(error);
       return errorResponse(req, res, error);
-      
     }
   },
 
@@ -173,5 +143,31 @@ module.exports = {
     } else {
       res.status(400).send(`Device ${clientId} already exists.`);
     }
-  }
+  },
+
+  registerDevice: async (req, res) => {
+    try {
+      const { serial_number, user_id } = req.body;
+      console.log(serial_number);
+      
+      const device = await models.devices.findOne({
+        where: { serial_number: serial_number },
+      });
+
+      if (!device) {
+        return errorResponse(req, res, 'Device not found', 404);
+      }
+
+      const newDevice = {
+        status: 'active',
+        user_id: user_id
+      }
+
+      const result = await Device.update(newDevice, {where: {id: device.id}});
+      await editResponse(req, res, result)
+    } catch (error) {
+      console.log(error);
+      return errorResponse(req, res, error);
+    }
+  },
 };
