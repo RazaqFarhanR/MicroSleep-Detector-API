@@ -45,7 +45,7 @@ module.exports = {
     try {
       const { phone_number, password, fcm_token } = req.body; // Ambil fcm_token dari request body
       const user = await User.scope('withPassword').findOne({
-        where: { phone_number },
+        where: { phone_number: '62'+phone_number },
       });
       
       if (!user) {
@@ -113,17 +113,17 @@ module.exports = {
         fcm_token,
       }, { transaction });
   
-      const otp = generateOTP();
-      const expiresAt = new Date(Date.now() + 10 * 60000); 
+      // const otp = generateOTP();
+      // const expiresAt = new Date(Date.now() + 10 * 60000); 
   
-      await OtpCodes.create({
-        user_id: newUser.id,
-        otp_code: otp,
-        expires_at: expiresAt,
-        is_verified: false,
-      }, { transaction });
+      // await OtpCodes.create({
+      //   user_id: newUser.id,
+      //   otp_code: otp,
+      //   expires_at: expiresAt,
+      //   is_verified: false,
+      // }, { transaction });
   
-      await sendOTP(phone_number, otp); 
+      // await sendOTP(phone_number, otp); 
       await transaction.commit(); 
       const msg = "User registered successfully. OTP sent to your phone number.";
       return addResponse(req, res, newUser, msg);
