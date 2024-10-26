@@ -23,10 +23,6 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: false
       },
-      fcm_token: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
