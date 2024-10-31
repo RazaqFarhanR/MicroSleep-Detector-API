@@ -38,7 +38,8 @@ MSDCApps Team
 };
 
 const verifyOTP = async (req, res) => {
-  const { phoneNumber, otp } = req.body;
+  const { otp } = req.body;
+  const phoneNumber = "62"+req.body.phone_number
 
   if (!phoneNumber || !otp) {
       return res.status(400).json({ message: 'Phone number and OTP are required' });
