@@ -118,11 +118,20 @@ module.exports = {
       
       const user = await User.findOne({
         where: { id: userId },
-        include:[{
-          model: models.emergency_contact,
-          as: 'emergency_contact'
-        }]
+        include: [
+          {
+            model: models.emergency_contact,
+            as: 'emergency_contact',
+          },
+          {
+            model: models.devices,
+            as: 'devices',
+            attributes: ['id', 'status', 'device_name', 'serial_number', 'client_id'],
+          },
+        ],
+        attributes: {exclude:['createdAt', 'updatedAt', 'is_verified', 'email']},
       });
+      
       return getResponse(req, res, { user });
     } catch (error) {
       return errorResponse(req, res, error.message);
