@@ -4,6 +4,7 @@ const models = require("../models/index")
 const Admin = models.admin
 const User = models.user
 const OtpCodes = models.otp_codes
+const EmergencyContact = models.emergency_contact;
 const { getResponse, addResponse, editResponse, errorResponse, deleteResponse } = require("../utils/responseHandler")
 const { generateOTP } = require('../utils/otpGenerator');
 const { sendOTP } = require('../utils/otpSender');
@@ -43,7 +44,7 @@ module.exports = {
 
   userAuth: async (req, res) => {
     try {
-      const { phone_number, password, fcm_token } = req.body; // Ambil fcm_token dari request body
+      const { phone_number, password, fcm_token } = req.body;
       const user = await User.scope('withPassword').findOne({
         where: { phone_number: '62'+phone_number },
       });
@@ -86,52 +87,61 @@ module.exports = {
   
 
   userRegister: async (req, res) => {
-    const { name, password, fcm_token } = req.body;
+    const { name, password, fcm_token, emergency_name } = req.body;
     const phone_number = '62' + req.body.phone_number;
-  
-    if (!name || !phone_number || !password) {
-      return res.status(400).json({ message: 'Name, phone number and password are required' });
+    const emergency_number = '62' + req.body.emergency_number;
+
+    if (!name || !phone_number || !password || !emergency_number || !emergency_name) {
+        return res.status(400).json({ message: 'Name, phone number, password, emergency number, and emergency name are required' });
     }
-  
+
     const transaction = await models.sequelize.transaction();
-  
+
     try {
-      const existingUser = await User.findOne({ where: { phone_number }, transaction });
-      if (existingUser) {
-        return res.status(400).json({ message: 'Phone number is already registered.' });
-      }
-  
-      const hashedPassword = crypto
-        .createHash('md5')
-        .update(password)
-        .digest('hex');
-  
-      const newUser = await User.create({
-        name,
-        phone_number,
-        password: hashedPassword,
-        fcm_token,
-      }, { transaction });
-  
-      // const otp = generateOTP();
-      // const expiresAt = new Date(Date.now() + 10 * 60000); 
-  
-      // await OtpCodes.create({
-      //   user_id: newUser.id,
-      //   otp_code: otp,
-      //   expires_at: expiresAt,
-      //   is_verified: false,
-      // }, { transaction });
-  
-      // await sendOTP(phone_number, otp); 
-      await transaction.commit(); 
-      const msg = "User registered successfully. OTP sent to your phone number.";
-      return addResponse(req, res, newUser, msg);
+        const existingUser = await User.findOne({ where: { phone_number }, transaction });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Phone number is already registered.' });
+        }
+
+        const hashedPassword = crypto
+            .createHash('md5')
+            .update(password)
+            .digest('hex');
+
+        const newUser = await User.create({
+            name,
+            phone_number,
+            password: hashedPassword,
+            fcm_token,
+        }, { transaction });
+
+        await EmergencyContact.create({
+            user_id: newUser.id,
+            name: emergency_name,
+            phone_number: emergency_number,
+        }, { transaction });
+
+        const otp = generateOTP(); 
+        const expiresAt = new Date(Date.now() + 10 * 60000);
+
+        await OtpCodes.create({
+            user_id: newUser.id,
+            otp_code: otp,
+            expires_at: expiresAt,
+            is_verified: false,
+        }, { transaction });
+
+        await sendOTP(emergency_number, otp);
+
+        await transaction.commit(); 
+        const msg = "User registered successfully. OTP sent to your emergency number.";
+        return addResponse(req, res, newUser, msg);
     } catch (error) {
-      await transaction.rollback();
-      console.error(error);
-      return errorResponse(req, res, error.message);
+        await transaction.rollback();
+        console.error(error);
+        return errorResponse(req, res, error.message);
     }
-  }
+}
+
   
 }
