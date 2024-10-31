@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const deviceController = require('../controllers/devices.controller');
 const upload = require('../middleware/keysMiddleware');
+const verifyUser = require('../middleware/verifyUser');
 
 router.get('/', deviceController.allDevices);
+router.get('/me', verifyUser, deviceController.getDeviceProfile);
 router.get('/:id', deviceController.getDeviceById);
 router.post('/', upload.fields([
     { name: 'certificate', maxCount: 1 },

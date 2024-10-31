@@ -93,6 +93,20 @@ module.exports = {
     }
   },
 
+  getDeviceProfile : async (req, res) => {
+    try {
+      const { userId } = req.user;
+      
+      const device = await Device.findOne({
+        where: { user_id: userId },
+        attributes: ['id', 'status', 'device_name', 'serial_number', 'client_id']
+      });
+      return getResponse(req, res, { device });
+    } catch (error) {
+      return errorResponse(req, res, error.message);
+    }
+  },
+
   updateDevice: async (req, res) => {
     const { id } = req.params;
     const { device_name, user_id, client_id, status } = req.body;
